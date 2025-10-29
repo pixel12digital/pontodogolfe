@@ -92,3 +92,6 @@ phpunit.xml
 .htaccess.bk
 pontodogolfeoutlet.com.br.zip
 
+# Git directories should not be in public_html
+public_html/.git/
+
