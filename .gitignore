@@ -1,0 +1,94 @@
+# WordPress Core
+# Keep the core WordPress files, but exclude logs and caches
+
+# Configuration files with sensitive data
+public_html/wp-config.php
+public_html/wp-config-local.php
+
+# WordPress uploads and generated content
+public_html/wp-content/uploads/
+public_html/wp-content/blogs.dir/
+public_html/wp-content/upgrade/
+public_html/wp-content/backup-db/
+public_html/wp-content/advanced-cache.php
+public_html/wp-content/wp-cache-config.php
+public_html/wp-content/cache/
+public_html/wp-content/backups/
+
+# WordPress cache files
+*.log
+public_html/wp-content/object-cache.php
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+
+# Node modules and dependencies (if using build tools)
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Composer
+/vendor/
+composer.phar
+composer.lock
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+*.bak
+*.backup
+
+# Database files
+*.sql
+*.sql.gz
+*.dump
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# Testing
+phpunit.xml
+.phpunit.result.cache
+/tests/
+
+# Build files
+/build/
+/dist/
+
+# Other
+.htaccess.bk
+pontodogolfeoutlet.com.br.zip
+
