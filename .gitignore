@@ -2,22 +2,23 @@
 # Keep the core WordPress files, but exclude logs and caches
 
 # Configuration files with sensitive data
-public_html/wp-config.php
-public_html/wp-config-local.php
+# Note: wp-config.php is in .gitignore but should be manually created on server
+/wp-config.php
+wp-config.php
 
 # WordPress uploads and generated content
-public_html/wp-content/uploads/
-public_html/wp-content/blogs.dir/
-public_html/wp-content/upgrade/
-public_html/wp-content/backup-db/
-public_html/wp-content/advanced-cache.php
-public_html/wp-content/wp-cache-config.php
-public_html/wp-content/cache/
-public_html/wp-content/backups/
+wp-content/uploads/
+wp-content/blogs.dir/
+wp-content/upgrade/
+wp-content/backup-db/
+wp-content/advanced-cache.php
+wp-content/wp-cache-config.php
+wp-content/cache/
+wp-content/backups/
 
 # WordPress cache files
 *.log
-public_html/wp-content/object-cache.php
+wp-content/object-cache.php
 
 # OS generated files
 .DS_Store
@@ -92,6 +93,7 @@ phpunit.xml
 .htaccess.bk
 pontodogolfeoutlet.com.br.zip
 
-# Git directories should not be in public_html
-public_html/.git/
+# Test files (should be deleted after setup)
+test-db-v2.php
+test-connection.php
 
