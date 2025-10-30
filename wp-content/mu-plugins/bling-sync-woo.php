@@ -113,12 +113,19 @@ function bling_upsert_wc_product_from_bling(array $item): int {
     update_post_meta($productId, '_stock_status', $stock > 0 ? 'instock' : 'outofstock');
 
     // Imagens: suporta campo único (string) e lista (ex.: imagens => [{url|link|src}, ...])
-    $singleImageUrl = bling_get_field($item, [ 'imagem', 'urlImagem', 'image', 'img', 'imagemUrl', 'imagemURL' ], '');
+    // Aceita imagem única como string ou objeto com chaves comuns usadas pelo Bling
+    $singleImageUrl = '';
+    if (isset($item['imagem']) && is_array($item['imagem'])) {
+        $singleImageUrl = bling_get_field($item['imagem'], [ 'url', 'link', 'urlOriginal', 'urlImagem' ], '');
+    }
+    if ($singleImageUrl === '') {
+        $singleImageUrl = bling_get_field($item, [ 'imagem', 'urlImagem', 'image', 'img', 'imagemUrl', 'imagemURL' ], '');
+    }
     $imagesArray = [];
     if (isset($item['imagens']) && is_array($item['imagens'])) {
         foreach ($item['imagens'] as $img) {
             if (!is_array($img)) { continue; }
-            $u = bling_get_field($img, [ 'url', 'link', 'src' ], '');
+            $u = bling_get_field($img, [ 'url', 'link', 'src', 'urlOriginal', 'urlImagem' ], '');
             if ($u) { $imagesArray[] = $u; }
         }
     }
@@ -126,6 +133,27 @@ function bling_upsert_wc_product_from_bling(array $item): int {
 
     if ($imagesArray) {
         bling_apply_product_images($productId, $imagesArray);
+    }
+
+    // Categorias: tenta vários campos (string única ou lista). Cria termos se faltarem.
+    $categoryNames = [];
+    if (isset($item['categorias']) && is_array($item['categorias'])) {
+        foreach ($item['categorias'] as $cat) {
+            $name = '';
+            if (is_array($cat)) {
+                $name = (string) bling_get_field($cat, [ 'descricao', 'nome', 'title' ], '');
+            } else {
+                $name = trim((string) $cat);
+            }
+            if ($name !== '') { $categoryNames[] = $name; }
+        }
+    }
+    if (!$categoryNames) {
+        $singleCat = (string) bling_get_field($item, [ 'categoria', 'categoriaDescricao', 'categoriaNome' ], '');
+        if ($singleCat !== '') { $categoryNames[] = $singleCat; }
+    }
+    if ($categoryNames) {
+        bling_apply_product_categories($productId, $categoryNames);
     }
 
     return (int) $productId;
@@ -182,6 +210,27 @@ function bling_apply_product_images(int $productId, array $urls): void {
         if (count($attachmentIds) > 1) {
             update_post_meta($productId, '_product_image_gallery', implode(',', array_slice($attachmentIds, 1)));
         }
+    }
+}
+
+/**
+ * Garante que as categorias existam e aplica ao produto (flat, sem hierarquia neste momento).
+ */
+function bling_apply_product_categories(int $productId, array $categoryNames): void {
+    $termIds = [];
+    foreach ($categoryNames as $name) {
+        $name = trim($name);
+        if ($name === '') { continue; }
+        $term = term_exists($name, 'product_cat');
+        if (!$term) {
+            $term = wp_insert_term($name, 'product_cat');
+        }
+        if (!is_wp_error($term)) {
+            $termIds[] = (int) ($term['term_id'] ?? (is_array($term) ? $term['term_id'] : $term));
+        }
+    }
+    if ($termIds) {
+        wp_set_post_terms($productId, $termIds, 'product_cat', false);
     }
 }
 
