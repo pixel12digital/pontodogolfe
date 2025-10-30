@@ -106,6 +106,7 @@ pontodogolfeoutlet.com.br.zip
 # Test files (should be deleted after setup)
 test-db-v2.php
 test-connection.php
+install-astra.php
 
 # Themes not versioned
 wp-content/themes/astra/
