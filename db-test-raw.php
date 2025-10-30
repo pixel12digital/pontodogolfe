@@ -19,6 +19,19 @@ $user = get_const($cfg, 'DB_USER');
 $pass = get_const($cfg, 'DB_PASSWORD');
 $db   = get_const($cfg, 'DB_NAME');
 
+// Se não encontrou via parser, tenta carregar o wp-config com SHORTINIT
+if ($host === '' || $user === '' || $db === '') {
+    if (!defined('SHORTINIT')) { define('SHORTINIT', true); }
+    require __DIR__ . '/wp-config.php';
+    if (defined('DB_HOST')) { $host = DB_HOST; }
+    if (defined('DB_USER')) { $user = DB_USER; }
+    if (defined('DB_PASSWORD')) { $pass = DB_PASSWORD; }
+    if (defined('DB_NAME')) { $db = DB_NAME; }
+}
+
+// Parâmetro opcional para forçar teste com IP direto
+$useIp = isset($_GET['use_ip']) && $_GET['use_ip'] == '1';
+
 echo "Reading credentials from wp-config.php\n";
 echo "Host: $host\nDB: $db\nUser: $user\n\n";
 
@@ -42,7 +55,8 @@ if ($host) {
 
 // Teste MySQL
 $start = microtime(true);
-$mysqli = @new mysqli($host, $user, $pass, $db);
+$targetHost = ($useIp && $dnsOk) ? $ip : $host;
+$mysqli = @new mysqli($targetHost, $user, $pass, $db);
 $elapsed = round((microtime(true) - $start) * 1000);
 if ($mysqli && !$mysqli->connect_errno) {
     echo "MySQL: CONNECTED in {$elapsed} ms\n";
@@ -51,6 +65,7 @@ if ($mysqli && !$mysqli->connect_errno) {
     $mysqli->close();
 } else {
     echo 'MySQL ERROR: ' . ($mysqli ? $mysqli->connect_errno . ' - ' . $mysqli->connect_error : 'unknown') . "\n";
+    if ($useIp) { echo "Tried with IP: $targetHost\n"; }
 }
 
 
