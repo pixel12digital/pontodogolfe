@@ -107,3 +107,6 @@ pontodogolfeoutlet.com.br.zip
 test-db-v2.php
 test-connection.php
 
+# Themes not versioned
+wp-content/themes/astra/
+
