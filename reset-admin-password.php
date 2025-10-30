@@ -35,19 +35,14 @@ if ($result && $result->num_rows > 0) {
     
     echo "<p style='color:blue;'>✅ Usuário encontrado: " . htmlspecialchars($user['user_login']) . " (ID: $user_id)</p>";
     
-    // Generate WordPress password hash
-    $password_hash = wp_hash_password($new_password);
+    // Generate WordPress password hash using bcrypt
+    $password_hash = password_hash($new_password, PASSWORD_BCRYPT);
     
-    // If wp_hash_password not available, use MD5 as fallback (legacy)
-    if (!$password_hash) {
-        $random_string = wp_generate_password();
-        $password_hash = md5($new_password . $random_string);
-    }
+    // Update password with WordPress-compatible hash
+    $stmt = $mysqli->prepare("UPDATE wp_users SET user_pass = ? WHERE ID = ?");
+    $stmt->bind_param("si", $password_hash, $user_id);
     
-    // Update password
-    $update_query = "UPDATE wp_users SET user_pass = MD5(CONCAT('$new_password', user_login)) WHERE ID = $user_id";
-    
-    if ($mysqli->query($update_query)) {
+    if ($stmt->execute()) {
         echo "<p style='color:green;'>✅ Senha atualizada com sucesso!</p>";
         echo "<hr>";
         echo "<h2>Credenciais Atualizadas:</h2>";
@@ -60,16 +55,21 @@ if ($result && $result->num_rows > 0) {
         echo "<hr>";
         echo "<p style='color:red;'><strong>⚠️ IMPORTANTE:</strong> Delete este arquivo AGORA!</p>";
     } else {
-        echo "<p style='color:red;'>❌ Erro ao atualizar senha: " . $mysqli->error . "</p>";
+        echo "<p style='color:red;'>❌ Erro ao atualizar senha: " . $stmt->error . "</p>";
     }
+    
+    $stmt->close();
 } else {
     echo "<p style='color:orange;'>⚠️ Usuário não encontrado. Tentando criar...</p>";
     
     // Try to create user
-    $insert_query = "INSERT INTO wp_users (user_login, user_pass, user_nicename, user_email, user_status) 
-                     VALUES ('$username', MD5(CONCAT('$new_password', '$username')), '$username', '$email', 0)";
+    $password_hash = password_hash($new_password, PASSWORD_BCRYPT);
+    $stmt = $mysqli->prepare("INSERT INTO wp_users (user_login, user_pass, user_nicename, user_email, user_status) VALUES (?, ?, ?, ?, 0)");
+    $stmt->bind_param("ssss", $username, $password_hash, $username, $email);
     
-    if ($mysqli->query($insert_query)) {
+    if ($stmt->execute()) {
+        $user_id = $mysqli->insert_id;
+        $stmt->close();
         $user_id = $mysqli->insert_id;
         echo "<p style='color:green;'>✅ Usuário criado com ID: $user_id</p>";
         
@@ -94,8 +94,10 @@ if ($result && $result->num_rows > 0) {
         echo "<hr>";
         echo "<p style='color:red;'><strong>⚠️ IMPORTANTE:</strong> Delete este arquivo AGORA!</p>";
     } else {
-        echo "<p style='color:red;'>❌ Erro ao criar usuário: " . $mysqli->error . "</p>";
+        echo "<p style='color:red;'>❌ Erro ao criar usuário: " . $stmt->error . "</p>";
     }
+    
+    $stmt->close();
 }
 
 $mysqli->close();
@@ -103,25 +105,6 @@ $mysqli->close();
 echo "<hr>";
 echo "<p><em>Este arquivo deve ser deletado após o uso por questões de segurança.</em></p>";
 
-// Helper function for password hashing (simplified version)
-function wp_hash_password($password) {
-    return password_hash($password, PASSWORD_DEFAULT);
-}
-
-function wp_generate_password($length = 12, $special_chars = true, $extra_special_chars = false) {
-    $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    if ($special_chars) {
-        $chars .= '!@#$%^&*()';
-    }
-    if ($extra_special_chars) {
-        $chars .= '-_ []{}<>~`+=,.;:/?|';
-    }
-    
-    $password = '';
-    for ($i = 0; $i < $length; $i++) {
-        $password .= substr($chars, rand(0, strlen($chars) - 1), 1);
-    }
-    return $password;
-}
+// No helper functions needed - using native PHP password functions
 ?>
 
