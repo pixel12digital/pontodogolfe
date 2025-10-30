@@ -9,6 +9,13 @@ if (!defined('ABSPATH')) { exit; }
 
 // Pode carregar antes do base `bling-sync.php`. Funções checam dependência em runtime.
 
+/**
+ * Verifica se WooCommerce está ativo.
+ */
+function bling_is_wc_active(): bool {
+    return class_exists('WooCommerce');
+}
+
 // O menu e handlers ficam disponíveis mesmo sem WooCommerce;
 // a execução avisará se o WooCommerce não estiver ativo.
 
@@ -59,6 +66,7 @@ function bling_iterate_all_products(callable $onItem, int $limit = 100, int $max
  * Cria/atualiza um produto no WooCommerce a partir do item do Bling.
  */
 function bling_upsert_wc_product_from_bling(array $item): int {
+    if (!bling_is_wc_active()) { return 0; }
     // Tenta usar SKU do Bling; se ausente, cria SKU determinístico a partir do ID/nome
     $sku  = (string) bling_get_field($item, [ 'codigo', 'sku', 'codigoProduto' ], '');
     if ($sku === '') {
@@ -133,6 +141,9 @@ function bling_products_full_sync(): array {
     if (!function_exists('bling_api_request')) {
         return [ 'ok' => false, 'error' => 'Dependência bling-sync ausente.' ];
     }
+    if (!bling_is_wc_active()) {
+        return [ 'ok' => false, 'error' => 'WooCommerce não está ativo.' ];
+    }
     $created = 0; $updated = 0; $processed = 0; $errors = 0;
     $result = bling_iterate_all_products(function (array $it) use (&$created, &$updated, &$processed, &$errors) {
         $sku = (string) bling_get_field($it, [ 'codigo', 'sku', 'codigoProduto' ], '');
@@ -185,6 +196,10 @@ add_action('admin_menu', function () {
         'bling-sync',
         function () {
             if (!current_user_can('manage_options')) { wp_die('Sem permissão.'); }
+            if (!bling_is_wc_active()) {
+                echo '<div class="wrap"><h1>Bling → WooCommerce</h1><div class="notice notice-error"><p>WooCommerce não está ativo. Ative o plugin para executar a sincronização.</p></div></div>';
+                return;
+            }
             $ran  = false;
             $resp = null;
             if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bling_sync_action'])) {
@@ -221,6 +236,10 @@ add_action('admin_menu', function () {
         function () {
             if (!current_user_can('manage_options')) { wp_die('Sem permissão.'); }
             check_admin_referer('bling_run_sync');
+            if (!bling_is_wc_active()) {
+                echo '<div class="wrap"><h1>Sync Bling</h1><div class="notice notice-error"><p>WooCommerce não está ativo.</p></div></div>';
+                return;
+            }
             $res = bling_products_full_sync();
             echo '<div class="wrap"><h1>Sync Bling</h1><pre>' . esc_html(print_r($res, true)) . '</pre></div>';
         }
