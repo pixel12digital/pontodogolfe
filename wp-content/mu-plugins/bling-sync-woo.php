@@ -465,3 +465,134 @@ if (!wp_next_scheduled('bling_products_full_sync_daily')) {
 }
 
 
+/**
+ * =============================
+ * Pedidos Woo → Bling (vendas)
+ * =============================
+ */
+if (!function_exists('bling_api_request')) {
+    // Base ausente — não registra integração de pedidos.
+    return;
+}
+
+/**
+ * Mapeia um pedido do WooCommerce para um payload de venda no Bling.
+ * O formato exato pode variar por conta; mantemos campos essenciais:
+ * - numero, data, cliente (nome/email)
+ * - itens: sku (codigo), descricao, quantidade, preco
+ */
+function bling_build_sale_payload_from_order(WC_Order $order): array {
+    $items = [];
+    foreach ($order->get_items() as $item) {
+        $product = $item->get_product();
+        if (!$product) { continue; }
+        $sku = (string) $product->get_sku();
+        if ($sku === '') { continue; }
+        $items[] = [
+            'codigo'     => $sku,
+            'descricao'  => $item->get_name(),
+            'quantidade' => (float) $item->get_quantity(),
+            'valor'      => (float) $order->get_item_total($item, false),
+        ];
+    }
+
+    $customer_name  = trim($order->get_formatted_billing_full_name());
+    $customer_email = (string) $order->get_billing_email();
+
+    return [
+        'numero'  => (string) $order->get_order_number(),
+        'data'    => gmdate('Y-m-d'),
+        'cliente' => [
+            'nome'  => $customer_name ?: 'Cliente Loja',
+            'email' => $customer_email,
+        ],
+        'itens'   => $items,
+        'total'   => (float) $order->get_total(),
+    ];
+}
+
+/**
+ * Envia uma venda ao Bling. Em caso de falha, retorna WP_Error.
+ */
+function bling_send_order_to_bling(int $orderId) {
+    $order = wc_get_order($orderId);
+    if (!$order) { return new WP_Error('order_not_found', 'Pedido não encontrado'); }
+    $payload = bling_build_sale_payload_from_order($order);
+    if (empty($payload['itens'])) {
+        return new WP_Error('no_items', 'Pedido sem itens com SKU');
+    }
+
+    // Endpoint de vendas (ajuste conforme necessidade da conta/API)
+    $res = bling_api_request('POST', '/vendas', [], $payload);
+    if (is_wp_error($res)) { return $res; }
+    $status = (int) ($res['status'] ?? 0);
+    if ($status < 200 || $status >= 300) {
+        return new WP_Error('bling_http_error', 'Falha ao enviar venda ao Bling', $res);
+    }
+
+    update_post_meta($orderId, '_bling_exported', 1);
+    return $res;
+}
+
+/**
+ * Fila simples de re-tentativas.
+ */
+function bling_queue_push(int $orderId): void {
+    $q = get_option('bling_order_queue', []);
+    if (!is_array($q)) { $q = []; }
+    if (!in_array($orderId, $q, true)) { $q[] = $orderId; }
+    update_option('bling_order_queue', $q, false);
+}
+
+function bling_queue_run(): void {
+    $q = get_option('bling_order_queue', []);
+    if (empty($q) || !is_array($q)) { return; }
+    $remaining = [];
+    foreach ($q as $orderId) {
+        $res = bling_send_order_to_bling((int) $orderId);
+        if (is_wp_error($res)) {
+            $remaining[] = $orderId; // mantém na fila
+        }
+    }
+    update_option('bling_order_queue', $remaining, false);
+}
+add_action('bling_order_queue_run', 'bling_queue_run');
+if (!wp_next_scheduled('bling_order_queue_run')) {
+    wp_schedule_event(time() + 120, 'five_minutes', 'bling_order_queue_run');
+}
+
+// Adiciona intervalo de 5 minutos ao cron
+add_filter('cron_schedules', function ($schedules) {
+    if (!isset($schedules['five_minutes'])) {
+        $schedules['five_minutes'] = [ 'interval' => 300, 'display' => 'Every 5 Minutes' ];
+    }
+    return $schedules;
+});
+
+/**
+ * Dispara exportação em processing e completed, se ainda não exportado.
+ */
+function bling_on_order_paid($orderId) {
+    if (get_post_meta($orderId, '_bling_exported', true)) { return; }
+    $res = bling_send_order_to_bling((int) $orderId);
+    if (is_wp_error($res)) {
+        // log básico e fila
+        set_transient('bling_last_order_error_' . $orderId, [ 'err' => $res->get_error_message() ], HOUR_IN_SECONDS);
+        bling_queue_push((int) $orderId);
+    } else {
+        // Opcional: agenda uma sincronização de estoque para refletir no Woo
+        wp_schedule_single_event(time() + 60, 'bling_products_full_sync_daily');
+    }
+}
+add_action('woocommerce_order_status_processing', 'bling_on_order_paid');
+add_action('woocommerce_order_status_completed', 'bling_on_order_paid');
+
+/**
+ * Em cancelamentos, sinaliza reversão (implementação depende da política da conta).
+ * Aqui apenas removemos a flag para permitir reenvio manual se necessário.
+ */
+add_action('woocommerce_order_status_cancelled', function ($orderId) {
+    delete_post_meta($orderId, '_bling_exported');
+});
+
+
