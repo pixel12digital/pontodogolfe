@@ -426,6 +426,33 @@ add_action('admin_menu', function () {
             } else {
                 echo '<p>Sem registros recentes.</p>';
             }
+
+            // Form para inspecionar um produto por SKU ou ID
+            echo '<h2>Inspecionar produto</h2>';
+            echo '<form method="get">';
+            echo '<input type="hidden" name="page" value="bling-debug" />';
+            echo '<p><label>SKU: <input name="sku" value="' . esc_attr($_GET['sku'] ?? '') . '" /></label> ou ';
+            echo '<label>ID: <input name="pid" value="' . esc_attr($_GET['pid'] ?? '') . '" /></label> ';
+            submit_button('Consultar', 'secondary', '', false);
+            echo '</p></form>';
+
+            $pid = isset($_GET['pid']) ? sanitize_text_field(wp_unslash($_GET['pid'])) : '';
+            $sku = isset($_GET['sku']) ? sanitize_text_field(wp_unslash($_GET['sku'])) : '';
+            if ($sku && function_exists('bling_api_request')) {
+                $r = bling_api_request('GET', '/produtos', [ 'codigo' => $sku, 'limite' => 1 ]);
+                echo '<h3>GET /produtos?codigo=' . esc_html($sku) . '</h3><pre>' . esc_html(print_r($r, true)) . '</pre>';
+                if (is_array($r) && isset($r['body']['data'][0]['id'])) {
+                    $pid = (string) $r['body']['data'][0]['id'];
+                }
+            }
+
+            if ($pid && function_exists('bling_api_request')) {
+                $r1 = bling_api_request('GET', '/produtos/' . rawurlencode($pid));
+                echo '<h3>GET /produtos/' . esc_html($pid) . '</h3><pre>' . esc_html(print_r($r1, true)) . '</pre>';
+                $r2 = bling_api_request('GET', '/produtos/' . rawurlencode($pid) . '/imagens');
+                echo '<h3>GET /produtos/' . esc_html($pid) . '/imagens</h3><pre>' . esc_html(print_r($r2, true)) . '</pre>';
+            }
+
             echo '</div>';
         }
     );
