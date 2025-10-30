@@ -7,9 +7,7 @@
 
 if (!defined('ABSPATH')) { exit; }
 
-if (!function_exists('bling_api_request')) {
-    return; // Aguarda o bling-sync base.
-}
+// Pode carregar antes do base `bling-sync.php`. Funções checam dependência em runtime.
 
 // O menu e handlers ficam disponíveis mesmo sem WooCommerce;
 // a execução avisará se o WooCommerce não estiver ativo.
@@ -30,6 +28,9 @@ function bling_get_field(array $item, array $candidates, $default = '') {
  * Itera por todas as páginas de produtos do Bling e aplica um callback por item.
  */
 function bling_iterate_all_products(callable $onItem, int $limit = 100, int $maxPages = 1000) {
+    if (!function_exists('bling_api_request')) {
+        return new WP_Error('bling_missing_base', 'Dependência bling-sync ausente.');
+    }
     $page = 1;
     $totalProcessed = 0;
     while ($page <= $maxPages) {
@@ -129,6 +130,9 @@ function bling_set_product_featured_image_from_url(int $productId, string $url):
  * Sincronização completa: pagina todos os produtos e faz upsert.
  */
 function bling_products_full_sync(): array {
+    if (!function_exists('bling_api_request')) {
+        return [ 'ok' => false, 'error' => 'Dependência bling-sync ausente.' ];
+    }
     $created = 0; $updated = 0; $processed = 0; $errors = 0;
     $result = bling_iterate_all_products(function (array $it) use (&$created, &$updated, &$processed, &$errors) {
         $sku = (string) bling_get_field($it, [ 'codigo', 'sku', 'codigoProduto' ], '');
