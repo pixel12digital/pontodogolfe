@@ -112,10 +112,20 @@ function bling_upsert_wc_product_from_bling(array $item): int {
     update_post_meta($productId, '_stock', max(0, $stock));
     update_post_meta($productId, '_stock_status', $stock > 0 ? 'instock' : 'outofstock');
 
-    // Imagem destacada (se houver URL)
-    $imageUrl = bling_get_field($item, [ 'imagem', 'urlImagem', 'image', 'img' ], '');
-    if ($imageUrl) {
-        bling_set_product_featured_image_from_url($productId, $imageUrl);
+    // Imagens: suporta campo único (string) e lista (ex.: imagens => [{url|link|src}, ...])
+    $singleImageUrl = bling_get_field($item, [ 'imagem', 'urlImagem', 'image', 'img', 'imagemUrl', 'imagemURL' ], '');
+    $imagesArray = [];
+    if (isset($item['imagens']) && is_array($item['imagens'])) {
+        foreach ($item['imagens'] as $img) {
+            if (!is_array($img)) { continue; }
+            $u = bling_get_field($img, [ 'url', 'link', 'src' ], '');
+            if ($u) { $imagesArray[] = $u; }
+        }
+    }
+    if (!$imagesArray && $singleImageUrl) { $imagesArray[] = $singleImageUrl; }
+
+    if ($imagesArray) {
+        bling_apply_product_images($productId, $imagesArray);
     }
 
     return (int) $productId;
@@ -131,6 +141,47 @@ function bling_set_product_featured_image_from_url(int $productId, string $url):
     $attachmentId = media_sideload_image($url, $productId, null, 'id');
     if (!is_wp_error($attachmentId) && $attachmentId) {
         set_post_thumbnail($productId, $attachmentId);
+    }
+}
+
+/**
+ * Importa uma lista de URLs de imagens: primeira vira destacada, demais entram na galeria.
+ * Deduplica por URL simplificada.
+ */
+function bling_apply_product_images(int $productId, array $urls): void {
+    require_once ABSPATH . 'wp-admin/includes/image.php';
+    require_once ABSPATH . 'wp-admin/includes/file.php';
+    require_once ABSPATH . 'wp-admin/includes/media.php';
+
+    $normalized = [];
+    foreach ($urls as $u) {
+        $u = trim((string) $u);
+        if (!$u) { continue; }
+        // remove querystrings variáveis para deduplicar
+        $parts = wp_parse_url($u);
+        $key = ($parts['scheme'] ?? '') . '://' . ($parts['host'] ?? '') . ($parts['path'] ?? '');
+        if (!in_array($key, $normalized, true)) { $normalized[] = $key; }
+    }
+    if (!$normalized) { return; }
+
+    $attachmentIds = [];
+    foreach ($normalized as $i => $baseUrl) {
+        // tenta baixar a URL original correspondente (com query se existir)
+        $originalUrl = null;
+        foreach ($urls as $candidate) {
+            if (strpos($candidate, $baseUrl) === 0) { $originalUrl = $candidate; break; }
+        }
+        $originalUrl = $originalUrl ?: $baseUrl;
+
+        $attId = media_sideload_image($originalUrl, $productId, null, 'id');
+        if (!is_wp_error($attId) && $attId) { $attachmentIds[] = (int) $attId; }
+    }
+
+    if ($attachmentIds) {
+        set_post_thumbnail($productId, $attachmentIds[0]);
+        if (count($attachmentIds) > 1) {
+            update_post_meta($productId, '_product_image_gallery', implode(',', array_slice($attachmentIds, 1)));
+        }
     }
 }
 
