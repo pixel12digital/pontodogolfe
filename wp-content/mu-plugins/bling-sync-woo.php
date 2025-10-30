@@ -138,6 +138,14 @@ function bling_upsert_wc_product_from_bling(array $item): int {
 
     if ($imagesArray) {
         bling_apply_product_images($productId, $imagesArray);
+    } else {
+        // Log de diagnóstico quando nenhum URL de imagem foi encontrado
+        set_transient('bling_last_item_debug', [
+            'reason' => 'no_images_found',
+            'sku'    => $sku,
+            'id'     => (string) bling_get_field($item, [ 'id', 'idProduto', 'id_produto' ], ''),
+            'item'   => $item,
+        ], HOUR_IN_SECONDS);
     }
 
     // Categorias: tenta vários campos (string única ou lista). Cria termos se faltarem.
@@ -400,6 +408,25 @@ add_action('admin_menu', function () {
             }
             $res = bling_products_full_sync();
             echo '<div class="wrap"><h1>Sync Bling</h1><pre>' . esc_html(print_r($res, true)) . '</pre></div>';
+        }
+    );
+
+    // Página de debug para inspecionar último item sem imagens
+    add_management_page(
+        'Bling Debug',
+        'Bling Debug',
+        'manage_options',
+        'bling-debug',
+        function () {
+            if (!current_user_can('manage_options')) { wp_die('Sem permissão.'); }
+            echo '<div class="wrap"><h1>Bling Debug</h1>';
+            $dbg = get_transient('bling_last_item_debug');
+            if ($dbg) {
+                echo '<p>Último registro:</p><pre>' . esc_html(print_r($dbg, true)) . '</pre>';
+            } else {
+                echo '<p>Sem registros recentes.</p>';
+            }
+            echo '</div>';
         }
     );
 });
