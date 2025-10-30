@@ -130,6 +130,11 @@ function bling_upsert_wc_product_from_bling(array $item): int {
         }
     }
     if (!$imagesArray && $singleImageUrl) { $imagesArray[] = $singleImageUrl; }
+    // Se nada veio no payload do /produtos, tenta endpoint dedicado de imagens
+    if (!$imagesArray) {
+        $fetched = bling_fetch_product_images_urls($item);
+        if ($fetched) { $imagesArray = $fetched; }
+    }
 
     if ($imagesArray) {
         bling_apply_product_images($productId, $imagesArray);
@@ -154,6 +159,11 @@ function bling_upsert_wc_product_from_bling(array $item): int {
     }
     if ($categoryNames) {
         bling_apply_product_categories($productId, $categoryNames);
+    }
+    // Se não vieram categorias no payload, tenta buscar detalhes do produto
+    if (!$categoryNames) {
+        $moreCats = bling_fetch_product_categories($item);
+        if ($moreCats) { bling_apply_product_categories($productId, $moreCats); }
     }
 
     return (int) $productId;
@@ -211,6 +221,54 @@ function bling_apply_product_images(int $productId, array $urls): void {
             update_post_meta($productId, '_product_image_gallery', implode(',', array_slice($attachmentIds, 1)));
         }
     }
+}
+
+/**
+ * Obtém URLs de imagens via /produtos/{id}/imagens
+ */
+function bling_fetch_product_images_urls(array $item): array {
+    if (!function_exists('bling_api_request')) { return []; }
+    $pid = (string) bling_get_field($item, [ 'id', 'idProduto', 'id_produto' ], '');
+    if ($pid === '') { return []; }
+    $res = bling_api_request('GET', '/produtos/' . rawurlencode($pid) . '/imagens');
+    if (is_wp_error($res) || !is_array($res['body'])) { return []; }
+    $data = $res['body'];
+    $list = [];
+    if (isset($data['data']) && is_array($data['data'])) { $list = $data['data']; }
+    elseif (!empty($data) && isset($data[0])) { $list = $data; }
+    $urls = [];
+    foreach ($list as $img) {
+        if (!is_array($img)) { continue; }
+        $u = bling_get_field($img, [ 'url', 'link', 'src', 'urlOriginal', 'urlImagem' ], '');
+        if ($u) { $urls[] = $u; }
+    }
+    return $urls;
+}
+
+/**
+ * Busca categorias do produto via /produtos/{id}
+ */
+function bling_fetch_product_categories(array $item): array {
+    if (!function_exists('bling_api_request')) { return []; }
+    $pid = (string) bling_get_field($item, [ 'id', 'idProduto', 'id_produto' ], '');
+    if ($pid === '') { return []; }
+    $res = bling_api_request('GET', '/produtos/' . rawurlencode($pid));
+    if (is_wp_error($res) || !is_array($res['body'])) { return []; }
+    $data = $res['body'];
+    if (isset($data['data']) && is_array($data['data'])) { $data = $data['data']; }
+    $cats = [];
+    if (isset($data['categorias']) && is_array($data['categorias'])) {
+        foreach ($data['categorias'] as $cat) {
+            $name = '';
+            if (is_array($cat)) { $name = (string) bling_get_field($cat, [ 'descricao', 'nome', 'title' ], ''); }
+            else { $name = trim((string) $cat); }
+            if ($name !== '') { $cats[] = $name; }
+        }
+    } else {
+        $single = (string) bling_get_field($data, [ 'categoria', 'categoriaDescricao', 'categoriaNome' ], '');
+        if ($single !== '') { $cats[] = $single; }
+    }
+    return $cats;
 }
 
 /**
