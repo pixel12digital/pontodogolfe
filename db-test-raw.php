@@ -30,10 +30,12 @@ if (isset($_GET['show_errors']) && $_GET['show_errors'] == '1') {
 
 function get_const($src, $name) {
     // Aceita aspas simples ou duplas e espaços variados
-    $pattern = "/define\\(\\s*['\"]" . preg_quote($name, '/') . "['\"]\\s*,\\s*(['\"])(.*?)\\1\\s*\\)\\s*;/";
-    if (preg_match($pattern, $src, $m)) {
-        return $m[2];
-    }
+    $patternQuoted = "/define\\(\\s*['\"]" . preg_quote($name, '/') . "['\"]\\s*,\\s*(['\"])(.*?)\\1\\s*\\)\\s*;/";
+    if (preg_match($patternQuoted, $src, $m)) { return $m[2]; }
+
+    // Fallback: define('X', SOME_EXPR); captura bruto sem aspas (ex.: getenv('...')) – retorna vazio aqui; será tentado via include opcional
+    $patternAny = "/define\\(\\s*['\"]" . preg_quote($name, '/') . "['\"]\\s*,\\s*(.*?)\\)\\s*;/";
+    if (preg_match($patternAny, $src, $m)) { return ''; }
     return '';
 }
 
@@ -42,7 +44,18 @@ $user = get_const($cfg, 'DB_USER');
 $pass = get_const($cfg, 'DB_PASSWORD');
 $db   = get_const($cfg, 'DB_NAME');
 
-// Evita dar include no WordPress para não causar HTTP 500 em produção.
+// Opcional: se os valores não vierem por parsing (e você autorizar), tenta ler via include com SHORTINIT
+if (($host === '' || $user === '' || $db === '') && isset($_GET['allow_include']) && $_GET['allow_include'] == '1') {
+    if (!defined('SHORTINIT')) { define('SHORTINIT', true); }
+    // Silencia notices e evita fatal na saída do teste
+    $prev = @error_reporting(E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR);
+    @require $wpConfigPath;
+    @error_reporting($prev);
+    if (defined('DB_HOST')) { $host = DB_HOST; }
+    if (defined('DB_USER')) { $user = DB_USER; }
+    if (defined('DB_PASSWORD')) { $pass = DB_PASSWORD; }
+    if (defined('DB_NAME')) { $db = DB_NAME; }
+}
 
 // Parâmetro opcional para forçar teste com IP direto
 $useIp = isset($_GET['use_ip']) && $_GET['use_ip'] == '1';
