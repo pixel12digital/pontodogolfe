@@ -21,6 +21,13 @@ if ($wpConfigPath === '') { die("Can't find wp-config.php\n"); }
 $cfg = file_get_contents($wpConfigPath);
 if ($cfg === false) { die("Can't read wp-config.php\n"); }
 
+// Optional verbose errors via query string
+if (isset($_GET['show_errors']) && $_GET['show_errors'] == '1') {
+    @ini_set('display_errors', '1');
+    @ini_set('display_startup_errors', '1');
+    @error_reporting(E_ALL);
+}
+
 function get_const($src, $name) {
     // Aceita aspas simples ou duplas e espaços variados
     $pattern = "/define\\(\\s*['\"]" . preg_quote($name, '/') . "['\"]\\s*,\\s*(['\"])(.*?)\\1\\s*\\)\\s*;/";
@@ -35,15 +42,7 @@ $user = get_const($cfg, 'DB_USER');
 $pass = get_const($cfg, 'DB_PASSWORD');
 $db   = get_const($cfg, 'DB_NAME');
 
-// Se não encontrou via parser, tenta carregar o wp-config com SHORTINIT
-if ($host === '' || $user === '' || $db === '') {
-    if (!defined('SHORTINIT')) { define('SHORTINIT', true); }
-    require $wpConfigPath;
-    if (defined('DB_HOST')) { $host = DB_HOST; }
-    if (defined('DB_USER')) { $user = DB_USER; }
-    if (defined('DB_PASSWORD')) { $pass = DB_PASSWORD; }
-    if (defined('DB_NAME')) { $db = DB_NAME; }
-}
+// Evita dar include no WordPress para não causar HTTP 500 em produção.
 
 // Parâmetro opcional para forçar teste com IP direto
 $useIp = isset($_GET['use_ip']) && $_GET['use_ip'] == '1';
