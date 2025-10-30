@@ -29,13 +29,28 @@ if (isset($_GET['show_errors']) && $_GET['show_errors'] == '1') {
 }
 
 function get_const($src, $name) {
-    // Aceita aspas simples ou duplas e espaços variados
+    // 1) Valores literais com aspas simples/duplas
     $patternQuoted = "/define\\(\\s*['\"]" . preg_quote($name, '/') . "['\"]\\s*,\\s*(['\"])(.*?)\\1\\s*\\)\\s*;/";
     if (preg_match($patternQuoted, $src, $m)) { return $m[2]; }
 
-    // Fallback: define('X', SOME_EXPR); captura bruto sem aspas (ex.: getenv('...')) – retorna vazio aqui; será tentado via include opcional
-    $patternAny = "/define\\(\\s*['\"]" . preg_quote($name, '/') . "['\"]\\s*,\\s*(.*?)\\)\\s*;/";
-    if (preg_match($patternAny, $src, $m)) { return ''; }
+    // 2) Padrão getenv('VAR')
+    $patternGetenv = "/define\\(\\s*['\"]" . preg_quote($name, '/') . "['\"]\\s*,\\s*getenv\\(\\s*['\"]([^'\"]+)['\"]\\s*\)\s*\)\s*;/i";
+    if (preg_match($patternGetenv, $src, $m)) {
+        $val = getenv($m[1]);
+        return $val !== false ? $val : '';
+    }
+
+    // 3) Padrão $_ENV['VAR'] ou $_SERVER['VAR']
+    $patternEnv = "/define\\(\\s*['\"]" . preg_quote($name, '/') . "['\"]\\s*,\\s*\$_(ENV|SERVER)\\s*\\[\\s*['\"]([^'\"]+)['\"]\\s*\\]\\s*\)\\s*;/i";
+    if (preg_match($patternEnv, $src, $m)) {
+        $key = $m[2];
+        if (isset($_ENV[$key])) { return (string)$_ENV[$key]; }
+        if (isset($_SERVER[$key])) { return (string)$_SERVER[$key]; }
+        $val = getenv($key);
+        return $val !== false ? $val : '';
+    }
+
+    // 4) Outros casos complexos: retorna vazio e deixe o chamador decidir fallback
     return '';
 }
 
