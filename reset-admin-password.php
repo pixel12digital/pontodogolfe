@@ -22,7 +22,7 @@ if ($mysqli->connect_error) {
 echo "<p style='color:green;'>✅ Conectado ao banco de dados</p>";
 
 // New password
-$new_password = 'Dietrich@2025!';
+$new_password = 'Los@ngo#081081';
 $username = 'admin';
 $email = 'dietrich.representacoes@gmail.com';
 
