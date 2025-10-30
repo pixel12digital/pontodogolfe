@@ -6,8 +6,10 @@ $cfg = file_get_contents(__DIR__ . '/wp-config.php');
 if ($cfg === false) { die("Can't read wp-config.php\n"); }
 
 function get_const($src, $name) {
-    if (preg_match("/define\(\s*'" . preg_quote($name, '/') . "'\s*,\s*'([^']*)'\s*\)\s*;/", $src, $m)) {
-        return $m[1];
+    // Aceita aspas simples ou duplas e espaços variados
+    $pattern = "/define\\(\\s*['\"]" . preg_quote($name, '/') . "['\"]\\s*,\\s*(['\"])(.*?)\\1\\s*\\)\\s*;/";
+    if (preg_match($pattern, $src, $m)) {
+        return $m[2];
     }
     return '';
 }
