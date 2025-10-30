@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Bling Integration (MU)
  * Description: Callback OAuth2 do Bling, troca de código por token e armazenamento no WP.
- * Version: 0.1.2
+ * Version: 0.1.3
  */
 
 if (!defined('ABSPATH')) { exit; }
@@ -19,7 +19,6 @@ function bling_get_redirect_uri(): string {
 	return admin_url('admin.php?page=bling-oauth-callback');
 }
 
-// Registrar a página (opcional, para que o WP reconheça o slug)
 function bling_admin_menu() {
 	add_submenu_page(
 		null,
@@ -32,13 +31,12 @@ function bling_admin_menu() {
 }
 add_action('admin_menu', 'bling_admin_menu');
 
-// Capturar o callback o mais cedo possível no admin
 add_action('admin_init', function () {
 	if (!is_admin()) { return; }
 	$page = isset($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : '';
 	if ($page !== 'bling-oauth-callback') { return; }
 	bling_handle_oauth_callback();
-	exit; // impedir que o WP continue renderizando
+	exit;
 });
 
 function bling_handle_oauth_callback() {
@@ -51,14 +49,16 @@ function bling_handle_oauth_callback() {
 	$body = [
 		'grant_type'   => 'authorization_code',
 		'code'         => $code,
-		'client_id'    => BLING_CLIENT_ID,
-		'client_secret'=> BLING_CLIENT_SECRET,
 		'redirect_uri' => bling_get_redirect_uri(),
 	];
 
+	$basic = base64_encode(BLING_CLIENT_ID . ':' . BLING_CLIENT_SECRET);
 	$response = wp_remote_post('https://www.bling.com.br/Api/v3/oauth/token', [
 		'timeout' => 20,
-		'headers' => [ 'Content-Type' => 'application/x-www-form-urlencoded' ],
+		'headers' => [
+			'Content-Type'  => 'application/x-www-form-urlencoded',
+			'Authorization' => 'Basic ' . $basic,
+		],
 		'body'    => http_build_query($body),
 	]);
 
@@ -83,6 +83,6 @@ function bling_handle_oauth_callback() {
 		echo '<h2>Conexão com o Bling realizada com sucesso.</h2>';
 		echo '<p>Token armazenado. Você já pode fechar esta página.</p>';
 	} else {
-		echo '<div class="notice notice-error"><p>Falha ao obter token. Código HTTP: ' . esc_html((string)$code_http) . '</p><pre style="white-space:pre-wrap;">' . esc_html($raw) . '</pre></div>';
+		echo '<div class="notice notice-error"><p>Falha ao obter token. Código HTTP: ' . esc_html((string)$code_http) . '</p><pre style=\"white-space:pre-wrap;\">' . esc_html($raw) . '</pre></div>';
 	}
 }
