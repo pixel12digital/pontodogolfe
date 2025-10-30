@@ -2,7 +2,23 @@
 // Diagnóstico independente (não carrega WordPress)
 @header('Content-Type: text/plain; charset=utf-8');
 
-$cfg = file_get_contents(__DIR__ . '/wp-config.php');
+// Resolve wp-config.php when this script is placed in subdirectories (e.g., wp-admin)
+function find_wp_config_path() {
+    $candidates = [
+        __DIR__ . '/wp-config.php',
+        dirname(__DIR__) . '/wp-config.php',
+        dirname(dirname(__DIR__)) . '/wp-config.php',
+    ];
+    foreach ($candidates as $candidate) {
+        if (is_readable($candidate)) { return $candidate; }
+    }
+    return '';
+}
+
+$wpConfigPath = find_wp_config_path();
+if ($wpConfigPath === '') { die("Can't find wp-config.php\n"); }
+
+$cfg = file_get_contents($wpConfigPath);
 if ($cfg === false) { die("Can't read wp-config.php\n"); }
 
 function get_const($src, $name) {
@@ -22,7 +38,7 @@ $db   = get_const($cfg, 'DB_NAME');
 // Se não encontrou via parser, tenta carregar o wp-config com SHORTINIT
 if ($host === '' || $user === '' || $db === '') {
     if (!defined('SHORTINIT')) { define('SHORTINIT', true); }
-    require __DIR__ . '/wp-config.php';
+    require $wpConfigPath;
     if (defined('DB_HOST')) { $host = DB_HOST; }
     if (defined('DB_USER')) { $user = DB_USER; }
     if (defined('DB_PASSWORD')) { $pass = DB_PASSWORD; }
