@@ -12,29 +12,34 @@
 
 **Para corrigir o tema "royal-elementor-kit" quebrado:**
 
-1. Acesse o painel admin do WordPress: `https://pontodogolfeoutlet.com.br/wp-admin`
-2. O mu-plugin `fix-broken-theme.php` irá:
-   - Detecta que o tema "royal-elementor-kit" não existe
-   - Baixa e instala o Astra automaticamente
-   - Ativa o tema Astra
-   - Mostra uma notificação de sucesso
+1. Acesse QUALQUER página do WordPress: `https://pontodogolfeoutlet.com.br/wp-admin`
+2. O mu-plugin `fix-broken-theme.php` irá **AUTOMATICAMENTE**:
+   - Detectar que o Astra não está instalado
+   - Baixar e instalar o Astra
+   - Ativar o tema Astra
+   - Mostrar uma notificação de sucesso
 3. Pronto! O login já está personalizado
+
+**Funciona mesmo sem estar logado!**
 
 ⚠️ **Importante**: Após a ativação bem-sucedida, você pode deletar:
 - `wp-content/mu-plugins/fix-broken-theme.php`
 - `wp-content/mu-plugins/force-install-astra.php`
 - `fix-themes-config.php`
+- `install-astra-simple.php`
 
-### Opção 2: Script Manual
+### Opção 2: Script Manual (Se a automática não funcionar)
 
-Se a opção automática não funcionar, execute manualmente:
+Se a opção automática não funcionar:
 
-1. Acesse: `https://pontodogolfeoutlet.com.br/fix-themes-config.php`
+1. Acesse: `https://pontodogolfeoutlet.com.br/install-astra-simple.php`
 2. O script irá:
-   - Instalar o Astra se necessário
-   - Ativar o Astra
-   - Mostrar mensagens de sucesso/erro
-3. Delete o arquivo `fix-themes-config.php` após usar
+   - Instalar o Astra
+   - Ativar automaticamente
+   - Mostrar mensagens de sucesso
+3. Delete o arquivo após usar
+
+**Este script não precisa de autenticação!**
 
 ### Opção 3: Manual (via painel admin)
 
