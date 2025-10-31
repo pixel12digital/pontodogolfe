@@ -18,6 +18,7 @@ function pdg_remove_default_dashboard_widgets() {
     remove_meta_box('dashboard_right_now', 'dashboard', 'normal');        // Em resumo (info do WP)
     remove_meta_box('dashboard_site_health', 'dashboard', 'normal');      // Saúde do Site
     remove_meta_box('dashboard_php_nag', 'dashboard', 'normal');          // Avisos de PHP
+    remove_meta_box('dashboard_welcome_panel', 'dashboard', 'normal');    // Boas-vindas/Welcome
     
     // Remover widgets do WooCommerce
     if (class_exists('WooCommerce')) {
