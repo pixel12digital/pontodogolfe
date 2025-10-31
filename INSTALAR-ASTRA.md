@@ -8,17 +8,35 @@
 
 ## Passo a Passo para Ativar o Astra
 
-### Opção 1: Automática (via mu-plugin)
+### ⚡ Opção 1: Automática (via mu-plugin) - RECOMENDADO
+
+**Para corrigir o tema "royal-elementor-kit" quebrado:**
 
 1. Acesse o painel admin do WordPress: `https://pontodogolfeoutlet.com.br/wp-admin`
-2. O mu-plugin `force-install-astra.php` irá:
-   - Baixar e instalar o Astra automaticamente
-   - Ativar o tema Astra
-   - Mostrar uma notificação de sucesso
+2. O mu-plugin `fix-broken-theme.php` irá:
+   - Detecta que o tema "royal-elementor-kit" não existe
+   - Baixa e instala o Astra automaticamente
+   - Ativa o tema Astra
+   - Mostra uma notificação de sucesso
+3. Pronto! O login já está personalizado
 
-⚠️ **Importante**: Após a ativação, delete o arquivo `wp-content/mu-plugins/force-install-astra.php` (é temporário)
+⚠️ **Importante**: Após a ativação bem-sucedida, você pode deletar:
+- `wp-content/mu-plugins/fix-broken-theme.php`
+- `wp-content/mu-plugins/force-install-astra.php`
+- `fix-themes-config.php`
 
-### Opção 2: Manual (via painel admin)
+### Opção 2: Script Manual
+
+Se a opção automática não funcionar, execute manualmente:
+
+1. Acesse: `https://pontodogolfeoutlet.com.br/fix-themes-config.php`
+2. O script irá:
+   - Instalar o Astra se necessário
+   - Ativar o Astra
+   - Mostrar mensagens de sucesso/erro
+3. Delete o arquivo `fix-themes-config.php` após usar
+
+### Opção 3: Manual (via painel admin)
 
 1. Acesse: `https://pontodogolfeoutlet.com.br/wp-admin/themes.php`
 2. Se o Astra não estiver instalado:
@@ -29,15 +47,6 @@
 4. Se preferir usar o child theme:
    - Ative o tema "Astra Child (Ponto do Golfe)"
    - A personalização do login já está configurada!
-
-### Opção 3: Desabilitar mu-plugin temporário
-
-Se quiser desabilitar temporariamente o tema "ponto" que está sendo forçado:
-
-```bash
-# O arquivo wp-content/mu-plugins/force-theme-ponto.php já foi desabilitado
-# Se precisar reabilitar, descomente o código no arquivo
-```
 
 ## Verificando se Funcionou
 
@@ -63,9 +72,11 @@ PDG_COLOR_WHITE        = #FFFFFF  // Branco
 
 Após o Astra estar instalado e ativo, você pode deletar:
 
+- ❌ `wp-content/mu-plugins/fix-broken-theme.php` (correção automática)
 - ❌ `wp-content/mu-plugins/force-install-astra.php` (instalação automática)
 - ❌ `wp-content/mu-plugins/auto-install-astra.php` (versão antiga)
 - ❌ `wp-content/mu-plugins/force-theme-ponto.php` (tema temporário - já desabilitado)
+- ❌ `fix-themes-config.php` (script manual)
 
 ## Próximos Passos
 
