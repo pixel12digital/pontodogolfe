@@ -534,3 +534,26 @@ function pdg_custom_admin_styles() {
 add_filter('admin_footer_text', '__return_empty_string');
 add_filter('update_footer', '__return_empty_string', 11);
 
+// =====================================================
+// OCULTAR ELEMENTOS DE TELA
+// =====================================================
+
+// Remover completamente a seção "Opções deste ecrã"
+add_filter('screen_options_show_screen', '__return_false');
+
+// Esconder o botão "Opções deste ecrã" completamente
+add_action('admin_head', 'pdg_hide_screen_options');
+function pdg_hide_screen_options() {
+    ?>
+    <style type="text/css">
+        /* Esconder botão Opções deste ecrã */
+        #screen-options-link-wrap,
+        #contextual-help-link-wrap,
+        .screen-meta-toggle,
+        #screen-meta-links {
+            display: none !important;
+        }
+    </style>
+    <?php
+}
+
