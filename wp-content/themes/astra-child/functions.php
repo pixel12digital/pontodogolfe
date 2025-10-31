@@ -62,15 +62,18 @@ add_action('login_head', function() {
         
         .wp-login-logo a {
             background-image: url('<?php echo esc_url($logo_url); ?>') !important;
-            background-size: contain;
+            background-size: cover;
             background-repeat: no-repeat;
-            background-position: center top;
-            width: 320px;
-            height: 200px;
+            background-position: center center;
+            width: 150px;
+            height: 150px;
             display: block;
             margin: 0 auto;
             text-indent: -9999px;
             overflow: hidden;
+            border-radius: 50%;
+            border: 4px solid <?php echo PDG_COLOR_PRIMARY; ?>;
+            box-shadow: 0 4px 10px rgba(31, 93, 63, 0.2);
         }
         
         /* Corpo da página */
