@@ -8,13 +8,23 @@
 add_action('wp_dashboard_setup', 'pdg_remove_default_dashboard_widgets', 999);
 
 function pdg_remove_default_dashboard_widgets() {
-    // Remover widgets padrão
+    // Remover widgets padrão do WordPress
     remove_meta_box('dashboard_quick_press', 'dashboard', 'side');        // Rascunho rápido
     remove_meta_box('dashboard_recent_drafts', 'dashboard', 'side');      // Rascunhos recentes
     remove_meta_box('dashboard_primary', 'dashboard', 'side');            // Notícias do WordPress
     remove_meta_box('dashboard_secondary', 'dashboard', 'side');          // Eventos do WordPress
     remove_meta_box('dashboard_recent_comments', 'dashboard', 'normal');  // Comentários recentes
     remove_meta_box('dashboard_activity', 'dashboard', 'normal');         // Atividade (regenerada depois)
+    remove_meta_box('dashboard_right_now', 'dashboard', 'normal');        // Em resumo (info do WP)
+    remove_meta_box('dashboard_site_health', 'dashboard', 'normal');      // Saúde do Site
+    remove_meta_box('dashboard_php_nag', 'dashboard', 'normal');          // Avisos de PHP
+    
+    // Remover widgets do WooCommerce
+    if (class_exists('WooCommerce')) {
+        remove_meta_box('wc_admin_dashboard_setup', 'dashboard', 'normal');  // Setup do WooCommerce
+        remove_meta_box('woocommerce_dashboard_status', 'dashboard', 'normal'); // Status genérico
+        remove_meta_box('woocommerce_dashboard_recent_reviews', 'dashboard', 'normal'); // Reviews recentes
+    }
 }
 
 // Adicionar widgets customizados para loja
@@ -317,4 +327,155 @@ function pdg_dashboard_quick_links() {
     }
     echo '</div>';
 }
+
+// =====================================================
+// REMOVER ELEMENTOS DA BARRA DE ADMINISTRAÇÃO
+// =====================================================
+
+// Remover itens desnecessários da admin bar (barra superior)
+add_action('admin_bar_menu', 'pdg_remove_admin_bar_nodes', 999);
+
+function pdg_remove_admin_bar_nodes($wp_admin_bar) {
+    // Remover sempre (para todos os usuários exceto super admins em multisite)
+    $wp_admin_bar->remove_node('wp-logo');          // Logo do WordPress
+    $wp_admin_bar->remove_node('about');            // Sobre o WordPress
+    $wp_admin_bar->remove_node('wporg');            // WordPress.org
+    $wp_admin_bar->remove_node('documentation');    // Documentação
+    $wp_admin_bar->remove_node('support-forums');   // Fóruns de suporte
+    $wp_admin_bar->remove_node('feedback');         // Feedback
+    $wp_admin_bar->remove_node('comments');         // Link de comentários
+    $wp_admin_bar->remove_node('customize');        // Personalizar
+    
+    // Remover apenas para usuários que não são admins
+    if (!current_user_can('manage_options')) {
+        $wp_admin_bar->remove_node('updates');      // Atualizações
+        $wp_admin_bar->remove_node('new-content');  // Adicionar Novo
+    }
+}
+
+// =====================================================
+// PERSONALIZAR BARRA DE ADMINISTRAÇÃO
+// =====================================================
+
+// Adicionar logo Ponto do Golfe na admin bar
+add_action('admin_bar_menu', 'pdg_add_custom_admin_bar_logo', 1);
+
+function pdg_add_custom_admin_bar_logo($wp_admin_bar) {
+    $wp_admin_bar->add_node([
+        'id'    => 'pdg-logo',
+        'title' => '<span style="background: linear-gradient(135deg, #1F5D3F 0%, #719B57 100%); color: white; padding: 5px 12px; border-radius: 4px; font-weight: bold;">⛳ PONTO DO GOLFE</span>',
+        'href'  => home_url('/'),
+        'meta'  => [
+            'target' => '_blank',
+            'title'  => 'Ir para o site'
+        ]
+    ]);
+}
+
+// =====================================================
+// REMOVER MENUS NÃO ESSENCIAIS
+// =====================================================
+
+// Remover itens desnecessários do menu lateral
+add_action('admin_menu', 'pdg_remove_admin_menu_items', 999);
+
+function pdg_remove_admin_menu_items() {
+    // Remover para todos os usuários
+    remove_menu_page('edit.php');                    // Posts/Artigos
+    remove_menu_page('edit-comments.php');           // Comentários
+    
+    // Remover apenas para usuários que não são administradores
+    if (!current_user_can('manage_options')) {
+        remove_menu_page('themes.php');              // Aparência
+        remove_menu_page('plugins.php');             // Plugins
+        remove_menu_page('tools.php');               // Ferramentas
+        remove_menu_page('options-general.php');     // Configurações gerais
+    }
+}
+
+// =====================================================
+// CSS PERSONALIZADO PARA ADMIN
+// =====================================================
+
+// Adicionar estilos customizados no admin
+add_action('admin_head', 'pdg_custom_admin_styles');
+
+function pdg_custom_admin_styles() {
+    ?>
+    <style type="text/css">
+        /* Personalizar cores do admin */
+        #wpadminbar {
+            background: linear-gradient(135deg, #1F5D3F 0%, #719B57 100%) !important;
+        }
+        
+        #wpadminbar .ab-item,
+        #wpadminbar .ab-empty-item {
+            color: white !important;
+        }
+        
+        #wpadminbar .ab-item:hover {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        
+        /* Remover "Olá, Nome" e substituir */
+        #wpadminbar #wp-admin-bar-my-account > .ab-item::before {
+            content: "👤 ";
+            padding-right: 5px;
+        }
+        
+        /* Personalizar dashboard */
+        .wp-core-ui .button-primary {
+            background: #1F5D3F !important;
+            border-color: #1F5D3F !important;
+            text-shadow: none !important;
+        }
+        
+        .wp-core-ui .button-primary:hover {
+            background: #719B57 !important;
+            border-color: #719B57 !important;
+        }
+        
+        /* Remover footer do WordPress */
+        #footer-left,
+        #footer-upgrade {
+            display: none !important;
+        }
+        
+        /* Personalizar títulos */
+        .wp-heading-inline {
+            color: #1F5D3F;
+        }
+        
+        /* Esconder avisos de "Obrigado por criar com WordPress" */
+        #footer-thankyou {
+            display: none !important;
+        }
+        
+        /* Esconder badges do WooCommerce */
+        .woocommerce-store-alerts__container {
+            display: none !important;
+        }
+        
+        /* Personalizar navegação lateral */
+        #adminmenu .wp-menu-arrow {
+            display: none !important;
+        }
+        
+        #adminmenu li.current > a,
+        #adminmenu li.wp-has-current-submenu > a {
+            background-color: #1F5D3F !important;
+        }
+        
+        #adminmenu li.wp-has-current-submenu .wp-submenu li.current a,
+        #adminmenu li.wp-has-current-submenu .wp-submenu li a:focus,
+        #adminmenu li.wp-has-current-submenu .wp-submenu li a:hover {
+            background-color: #719B57 !important;
+        }
+    </style>
+    <?php
+}
+
+// Remover rodapé do WordPress
+add_filter('admin_footer_text', '__return_empty_string');
+add_filter('update_footer', '__return_empty_string', 11);
 
