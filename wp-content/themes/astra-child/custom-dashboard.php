@@ -21,39 +21,59 @@ function pdg_remove_default_dashboard_widgets() {
 add_action('wp_dashboard_setup', 'pdg_add_store_dashboard_widgets');
 
 function pdg_add_store_dashboard_widgets() {
-    // Widget de resumo de vendas (principal)
+    // Widget de resumo de vendas (principal) - normal
     wp_add_dashboard_widget(
         'pdg_sales_summary',
         '📊 Resumo de Vendas Hoje',
-        'pdg_dashboard_sales_summary'
+        'pdg_dashboard_sales_summary',
+        null,
+        null,
+        'normal',
+        'high' // Prioridade alta para ficar no topo
     );
     
-    // Widget de pedidos pendentes
+    // Widget de pedidos pendentes - normal
     wp_add_dashboard_widget(
         'pdg_pending_orders',
         '🛒 Pedidos Pendentes',
-        'pdg_dashboard_pending_orders'
+        'pdg_dashboard_pending_orders',
+        null,
+        null,
+        'normal',
+        'core' // Prioridade normal
     );
     
-    // Widget de produtos com estoque baixo
+    // Widget de produtos com estoque baixo - normal
     wp_add_dashboard_widget(
         'pdg_low_stock',
         '⚠️ Estoque Baixo',
-        'pdg_dashboard_low_stock'
+        'pdg_dashboard_low_stock',
+        null,
+        null,
+        'normal',
+        'core' // Prioridade normal
     );
     
-    // Widget de atividade recente (simplificado)
+    // Widget de atividade recente (simplificado) - side para ocupar lateral
     wp_add_dashboard_widget(
         'pdg_store_activity',
         '📝 Atividade Recente',
-        'pdg_dashboard_store_activity'
+        'pdg_dashboard_store_activity',
+        null,
+        null,
+        'side',
+        'high' // Prioridade alta
     );
     
-    // Widget de links rápidos
+    // Widget de links rápidos - side para ocupar lateral
     wp_add_dashboard_widget(
         'pdg_quick_links',
         '🔗 Links Rápidos',
-        'pdg_dashboard_quick_links'
+        'pdg_dashboard_quick_links',
+        null,
+        null,
+        'side',
+        'high' // Prioridade alta para ficar no topo
     );
 }
 
