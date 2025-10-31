@@ -471,7 +471,61 @@ function pdg_custom_admin_styles() {
         #adminmenu li.wp-has-current-submenu .wp-submenu li a:hover {
             background-color: #719B57 !important;
         }
+        
+        /* DESABILITAR ARRASTO DE WIDGETS - FIXAR CARDS */
+        .postbox,
+        .meta-box-sortables,
+        #dashboard-widgets .meta-box-sortables,
+        #dashboard-widgets .postbox-container .empty-container {
+            pointer-events: none !important;
+        }
+        
+        /* Permitir interação dentro dos cards */
+        .postbox .inside,
+        .postbox .inside a,
+        .postbox .inside button,
+        .postbox .inside input,
+        .postbox button.handlediv {
+            pointer-events: auto !important;
+        }
+        
+        /* Ocultar botão de configuração dos widgets */
+        .postbox .handlediv {
+            display: none !important;
+        }
+        
+        /* Ocultar links de configuração */
+        .postbox .screen-options-toggle-wrap,
+        .screen-options-toggle {
+            display: none !important;
+        }
+        
+        /* Remover cursor de arraste */
+        .postbox .hndle {
+            cursor: default !important;
+        }
+        
+        /* Desabilitar Sortable jQuery */
+        #dashboard-widgets {
+            position: relative !important;
+        }
     </style>
+    <script type="text/javascript">
+        jQuery(document).ready(function($) {
+            // Desabilitar sortable do dashboard
+            if (typeof $.ui !== 'undefined' && $.ui.sortable) {
+                $('.meta-box-sortables').sortable('disable');
+                $('.meta-box-sortables').sortable('destroy');
+            }
+            
+            // Remover eventos de arraste
+            $('.postbox').off('mousedown');
+            $('.postbox .hndle').css('cursor', 'default');
+            
+            // Esconder opções de tela automaticamente
+            $('#screen-options-link-wrap').hide();
+        });
+    </script>
     <?php
 }
 
