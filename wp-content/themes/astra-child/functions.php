@@ -1,5 +1,8 @@
 <?php
 
+// Carregar personalização do dashboard
+require_once get_stylesheet_directory() . '/custom-dashboard.php';
+
 // Enqueue estilos do tema pai e do filho
 add_action('wp_enqueue_scripts', function () {
     $parent_style = 'astra-theme-css';
